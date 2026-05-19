@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="HYROX">
+<meta name="theme-color" content="#0a0a0a">
+<title>HYROX Tracker — Devin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#f0f0f0;font-family:'DM Sans',sans-serif;min-height:100vh}
+:root{--accent:#e8ff47;--bg2:#111;--bg3:#1a1a1a;--bg4:#222;--border:#2a2a2a;--border2:#333;--text2:#999;--text3:#555;--green:#2ecc71;--orange:#f39c12;--red:#e74c3c;--r:12px;--rs:8px}
+
+/* LAYOUT */
+#app{display:flex;flex-direction:column;min-height:100vh}
+.screen{display:none;flex:1;padding-bottom:80px}
+.screen.active{display:block}
+
+/* NAV */
+.nav{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #2a2a2a;display:flex;z-index:999;padding-bottom:env(safe-area-inset-bottom,0)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;background:none;border:none;color:#555;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;cursor:pointer}
+.nb.on{color:var(--accent)}
+.nb svg{width:22px;height:22px;stroke-width:1.8;fill:none;stroke:currentColor}
+
+/* COMMON */
+.hd{padding:20px 20px 0;display:flex;justify-content:space-between;align-items:flex-start}
+.ht{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px}
+.hs{font-size:12px;color:var(--text2);margin-top:2px}
+.badge{background:var(--accent);color:#000;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px}
+.sec{padding:14px 20px 0}
+.lbl{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.card{background:#111;border:1px solid #2a2a2a;border-radius:var(--r);padding:16px;margin-bottom:10px}
+.card2{background:#1a1a1a;border-radius:var(--rs);padding:14px 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.row{display:flex;justify-content:space-between;align-items:center}
+
+/* STATS */
+.sv{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1}
+.su{font-size:12px;color:var(--text2)}
+.sl{font-size:11px;color:var(--text2);margin-bottom:3px}
+
+/* PROGRESS */
+.pb{height:4px;background:#222;border-radius:2px;overflow:hidden;margin-top:6px}
+.pf{height:100%;border-radius:2px;background:var(--accent);transition:width .4s}
+
+/* BARS */
+.bars{display:flex;align-items:flex-end;gap:5px;height:64px}
+.bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bar{width:100%;border-radius:3px 3px 0 0;min-height:2px}
+.bl{font-size:9px;color:var(--text3)}
+
+/* RING */
+.ring-wrap{position:relative;width:76px;height:76px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.rp{font-family:'Bebas Neue',sans-serif;font-size:22px;line-height:1}
+.rl{font-size:9px;color:var(--text2)}
+
+/* FORM */
+.fg{margin-bottom:12px}
+.fl{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;font-weight:500}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;background:#1a1a1a;border:1px solid #333;border-radius:var(--rs);color:#f0f0f0;font-family:'DM Sans',sans-serif;font-size:15px;padding:10px 13px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+select{-webkit-appearance:none}
+
+/* TABS */
+.tabs{display:flex;gap:6px;padding:12px 20px 0;overflow-x:auto}
+.tab{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #333;background:none;color:#999;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0}
+.tab.on{background:var(--accent);color:#000;border-color:var(--accent)}
+.tp{display:none}.tp.on{display:block}
+
+/* BUTTONS */
+.btn{width:100%;padding:13px;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;cursor:pointer;border:none;margin-top:8px}
+.btn-p{background:var(--accent);color:#000}
+.btn-s{background:#1a1a1a;color:#f0f0f0;border:1px solid #333}
+.btn-sm{width:auto;padding:7px 14px;font-size:13px}
+
+/* EX CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:5px 11px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #333;background:#1a1a1a;color:#999;font-family:'DM Sans',sans-serif}
+.chip:hover,.chip:active{border-color:var(--accent);color:var(--accent)}
+
+/* LOG LIST */
+.li{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #2a2a2a}
+.li:last-child{border-bottom:none}
+.lic{width:38px;height:38px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.lim{flex:1;min-width:0}
+.lit{font-size:14px;font-weight:500;margin-bottom:1px}
+.lmeta{font-size:12px;color:var(--text2)}
+.liv{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--accent)}
+
+/* TARGET TABLE */
+.tr2{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #2a2a2a}
+.tr2:last-child{border-bottom:none}
+
+/* WEEK PLAN */
+.wp{background:#111;border:1px solid #2a2a2a;border-radius:var(--r);padding:14px 16px;margin-bottom:8px}
+.wd{font-size:14px;font-weight:500;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.ws{font-size:11px;color:var(--text2);margin-bottom:2px}
+.wt{font-size:13px;margin-bottom:5px}
+
+/* UPLOAD */
+.upload{border:1.5px dashed #333;border-radius:var(--r);padding:24px;text-align:center;cursor:pointer}
+.upload:hover{border-color:var(--accent)}
+
+/* TOAST */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--accent);color:#000;padding:9px 18px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:all .25s;z-index:9999;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:0}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- DASHBOARD -->
+<div class="screen active" id="s-dashboard">
+  <div class="hd">
+    <div><div class="ht">HYROX</div><div class="hs">Devin Roos · Sub 60:00</div></div>
+    <div class="badge" id="wleft">17W LEFT</div>
+  </div>
+  <div class="sec mt12">
+    <div id="week-banner" class="card" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px">
+      <div>
+        <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em" id="phase-lbl">Fase 1 — Base</div>
+        <div style="font-size:14px;font-weight:500;margin:2px 0" id="phase-sub">Maastricht over 17 weken</div>
+        <div style="font-size:11px;color:var(--text2)">17 sep 2026 · MECC Maastricht</div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent)" id="wnum">W1</div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="lbl">Herstel vandaag</div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="ring-wrap">
+          <svg width="76" height="76" viewBox="0 0 76 76">
+            <circle cx="38" cy="38" r="30" fill="none" stroke="#222" stroke-width="8"/>
+            <circle cx="38" cy="38" r="30" fill="none" stroke-width="8" id="rring" stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="188"/>
+          </svg>
+          <div class="ring-mid"><div class="rp" id="rpct">—</div><div class="rl">RECOVERY</div></div>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:3px" id="rstatus">Log vandaag</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5" id="rmsg">Vul je hersteldata in via Log.</div>
+        </div>
+      </div>
+      <div class="grid3 mt12">
+        <div class="card2"><div class="sl">HRV</div><div class="sv" id="d-hrv">—<span class="su">ms</span></div></div>
+        <div class="card2"><div class="sl">Slaap</div><div class="sv" id="d-sleep">—<span class="su">u</span></div></div>
+        <div class="card2"><div class="sl">Strain</div><div class="sv" id="d-strain">—</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="lbl">Week volume</div>
+    <div class="card">
+      <div class="row"><span style="font-size:13px;color:var(--text2)">Run km deze week</span><span style="font-family:'Bebas Neue';font-size:20px" id="wkm">0 km</span></div>
+      <div class="pb"><div class="pf" id="wkmbar" style="width:0%"></div></div>
+      <div class="bars mt12" id="daybars"></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="lbl">Station progressie</div>
+    <div class="card" id="stprog"></div>
+  </div>
+  <div class="sec">
+    <div class="lbl">Recente activiteiten</div>
+    <div class="card" id="recent"><div style="text-align:center;padding:20px 0;color:var(--text3);font-size:13px">Nog geen activiteiten</div></div>
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="screen" id="s-log">
+  <div class="hd"><div><div class="ht">LOG</div><div class="hs">Activiteit toevoegen</div></div></div>
+  <div class="tabs">
+    <button class="tab on" data-tab="recovery">Herstel</button>
+    <button class="tab" data-tab="run">Run</button>
+    <button class="tab" data-tab="hyrox">Hyrox</button>
+    <button class="tab" data-tab="strength">Kracht</button>
+    <button class="tab" data-tab="garmin">Garmin</button>
+  </div>
+
+  <div class="tp on" id="tp-recovery">
+    <div class="sec mt12"><div class="card">
+      <div class="fg"><label class="fl">Datum</label><input type="date" id="r-date"></div>
+      <div class="grid2"><div class="fg"><label class="fl">Recovery (%)</label><input type="number" id="r-rec" placeholder="0-100"></div><div class="fg"><label class="fl">HRV (ms)</label><input type="number" id="r-hrv" placeholder="68"></div></div>
+      <div class="grid2"><div class="fg"><label class="fl">Slaap (uur)</label><input type="number" id="r-sleep" placeholder="7.5" step="0.5"></div><div class="fg"><label class="fl">Slaapscore (%)</label><input type="number" id="r-ss" placeholder="80"></div></div>
+      <div class="fg"><label class="fl">Strain</label><input type="number" id="r-strain" placeholder="14.2" step="0.1"></div>
+      <div class="fg"><label class="fl">Notitie</label><input type="text" id="r-note" placeholder="Hoe voel je je?"></div>
+      <button class="btn btn-p" id="save-recovery">Herstel opslaan</button>
+    </div></div>
+  </div>
+
+  <div class="tp" id="tp-run">
+    <div class="sec mt12"><div class="card">
+      <div class="fg"><label class="fl">Datum</label><input type="date" id="rn-date"></div>
+      <div class="fg"><label class="fl">Type</label><select id="rn-type"><option value="interval">Interval (6×1km, 3min rust)</option><option value="interval-b">Interval race-spec (8×1km, 90s rust)</option><option value="tempo">Tempo</option><option value="zone2">Zone 2</option><option value="long">Long run</option></select></div>
+      <div class="grid2"><div class="fg"><label class="fl">Afstand (km)</label><input type="number" id="rn-dist" placeholder="8" step="0.1"></div><div class="fg"><label class="fl">Tijd (mm:ss)</label><input type="text" id="rn-time" placeholder="32:00"></div></div>
+      <div class="grid2"><div class="fg"><label class="fl">Pace (/km)</label><input type="text" id="rn-pace" placeholder="4:00"></div><div class="fg"><label class="fl">Hartslag</label><input type="number" id="rn-hr" placeholder="162"></div></div>
+      <div class="fg"><label class="fl">Notitie</label><input type="text" id="rn-note" placeholder="Hoe ging het?"></div>
+      <button class="btn btn-p" id="save-run">Run opslaan</button>
+    </div></div>
+  </div>
+
+  <div class="tp" id="tp-hyrox">
+    <div class="sec mt12"><div class="card">
+      <div class="fg"><label class="fl">Datum</label><input type="date" id="hx-date"></div>
+      <div class="fg"><label class="fl">Type sessie</label><select id="hx-type"><option value="full">Volledige simulatie</option><option value="half">Halve simulatie</option><option value="stations">Station isolatie</option></select></div>
+      <div class="lbl mt12" style="padding:0">Station tijden (mm:ss)</div>
+      <div id="st-inputs"></div>
+      <div class="fg mt8"><label class="fl">Totale tijd</label><input type="text" id="hx-total" placeholder="28:30"></div>
+      <div class="fg"><label class="fl">Notitie</label><input type="text" id="hx-note" placeholder="Wat ging goed/slecht?"></div>
+      <button class="btn btn-p" id="save-hyrox">Hyrox opslaan</button>
+    </div></div>
+  </div>
+
+  <div class="tp" id="tp-strength">
+    <div class="sec mt12">
+      <div class="card">
+        <div class="fg"><label class="fl">Datum</label><input type="date" id="st-date"></div>
+        <div class="fg"><label class="fl">Type</label><select id="st-type"><option value="chest">Chest</option><option value="back">Back</option><option value="legs">Legs</option><option value="shoulders">Shoulders</option><option value="arms">Arms</option><option value="core">Core</option><option value="upper">Upper body</option><option value="full">Full body</option><option value="hyrox-str">Hyrox kracht</option></select></div>
+      </div>
+      <div class="card mt8">
+        <div class="lbl" style="padding:0;margin-bottom:10px">Snel toevoegen</div>
+        <div class="chips" id="ex-chips"></div>
+      </div>
+      <div class="card mt8">
+        <div class="lbl" style="padding:0;margin-bottom:8px">Eigen oefening</div>
+        <div style="display:flex;gap:8px"><input type="text" id="custom-ex" placeholder="Naam oefening..." style="flex:1"><button class="btn btn-s btn-sm" id="add-custom-ex" style="margin:0;flex-shrink:0">+ Toevoegen</button></div>
+      </div>
+      <div id="ex-list"></div>
+      <div class="card mt8">
+        <div class="fg"><label class="fl">Notitie</label><input type="text" id="st-note" placeholder="Hoe voelde de sessie?"></div>
+        <button class="btn btn-p" id="save-strength">Training opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tp" id="tp-garmin">
+    <div class="sec mt12">
+      <div class="card">
+        <div class="upload" id="upload-zone"><div style="font-size:28px;margin-bottom:8px">📁</div><div style="font-size:14px;font-weight:500;margin-bottom:4px">Garmin bestand uploaden</div><div style="font-size:12px;color:var(--text2)">FIT, GPX of CSV — export via Garmin Connect</div></div>
+        <input type="file" id="garmin-file" accept=".fit,.gpx,.csv" style="display:none">
+        <div id="garmin-preview" class="hidden mt12"></div>
+        <button class="btn btn-p hidden" id="garmin-save">Activiteit importeren</button>
+      </div>
+      <div class="card mt8">
+        <div class="lbl" style="padding:0;margin-bottom:10px">Handmatig invoeren</div>
+        <div class="fg"><label class="fl">Type</label><select id="g-type"><option value="run">Run</option><option value="strength">Kracht</option><option value="cycling">Fietsen</option><option value="rowing">Roeien</option></select></div>
+        <div class="grid2"><div class="fg"><label class="fl">Datum</label><input type="date" id="g-date"></div><div class="fg"><label class="fl">Afstand (km)</label><input type="number" id="g-dist" step="0.1" placeholder="8"></div></div>
+        <div class="grid2"><div class="fg"><label class="fl">Tijd (mm:ss)</label><input type="text" id="g-time" placeholder="32:00"></div><div class="fg"><label class="fl">Hartslag</label><input type="number" id="g-hr" placeholder="155"></div></div>
+        <div class="grid2"><div class="fg"><label class="fl">Pace (/km)</label><input type="text" id="g-pace" placeholder="4:00"></div><div class="fg"><label class="fl">Calorieën</label><input type="number" id="g-cal" placeholder="450"></div></div>
+        <button class="btn btn-p" id="save-garmin-manual">Importeren</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="screen" id="s-progress">
+  <div class="hd"><div><div class="ht">PROGRESSIE</div><div class="hs">Sub 60 · Maastricht 17 sep</div></div></div>
+  <div class="sec mt12"><div class="lbl">HRV trend (7 dagen)</div><div class="card"><div class="bars" id="hrv-bars" style="height:70px"></div><div class="row mt8"><span style="font-size:12px;color:var(--text2)">Gem. 7d</span><span style="font-family:'Bebas Neue';font-size:18px" id="hrv-avg">— ms</span></div></div></div>
+  <div class="sec"><div class="lbl">Recovery trend (7 dagen)</div><div class="card"><div class="bars" id="rec-bars" style="height:70px"></div><div class="row mt8"><span style="font-size:12px;color:var(--text2)">Gem. 7d</span><span style="font-family:'Bebas Neue';font-size:18px" id="rec-avg">— %</span></div></div></div>
+  <div class="sec"><div class="lbl">Run volume (weken)</div><div class="card"><div class="bars" id="vol-bars" style="height:90px"></div></div></div>
+  <div class="sec"><div class="lbl">Pace progressie (interval runs)</div><div class="card"><div class="bars" id="pace-bars" style="height:70px"></div><div class="row mt8"><span style="font-size:12px;color:var(--text2)">Beste pace</span><span style="font-family:'Bebas Neue';font-size:18px;color:var(--accent)" id="best-pace">—</span></div></div></div>
+  <div class="sec"><div class="lbl">Sub-60 doelen vs splits</div><div class="card" id="target-comp"></div></div>
+</div>
+
+<!-- PLAN -->
+<div class="screen" id="s-plan">
+  <div class="hd"><div><div class="ht">PLAN</div><div class="hs">17 weken naar Maastricht</div></div></div>
+  <div class="sec mt12" id="plan-phases"></div>
+  <div class="sec"><div class="lbl">Deze week</div><div id="week-plan"></div></div>
+  <div class="sec"><div class="lbl">Zones (lactaattest)</div><div class="card" id="zones"></div></div>
+</div>
+
+</div><!-- /app -->
+
+<nav class="nav">
+  <button class="nb on" data-screen="dashboard"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
+  <button class="nb" data-screen="log"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="15"/></svg>Log</button>
+  <button class="nb" data-screen="progress"><svg viewBox="0 0 24 24"><polyline points="3,17 8,12 13,15 21,6"/><polyline points="17,6 21,6 21,10"/></svg>Progressie</button>
+  <button class="nb" data-screen="plan"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="9" y1="13" x2="15" y2="13"/></svg>Plan</button>
+</nav>
+<div id="toast"></div>
+
+<script>
+// STORAGE
+var S={
+  get:function(k){try{return JSON.parse(localStorage.getItem(k))||null}catch(e){return null}},
+  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
+  push:function(k,v){var a=S.get(k)||[];a.push(v);S.set(k,a)},
+  all:function(k){return S.get(k)||[]}
+};
+
+// CONSTANTS
+var RACE=new Date('2026-09-17');
+var START=new Date('2026-05-19');
+var STATIONS=['SkiErg','Sled Push','Sled Pull','Burpee BJ','Row','Farmers Carry','Sandbag Lunges','Wall Balls'];
+var ST_CUR={'SkiErg':'4:20','Sled Push':'2:27','Sled Pull':'3:14','Burpee BJ':'3:29','Row':'4:49','Farmers Carry':'1:22','Sandbag Lunges':'3:27','Wall Balls':'5:30'};
+var ST_TGT={'SkiErg':'3:50','Sled Push':'2:12','Sled Pull':'2:50','Burpee BJ':'3:15','Row':'3:50','Farmers Carry':'1:12','Sandbag Lunges':'3:05','Wall Balls':'4:40'};
+var EX_LIB=['Bench Press','Incline Bench Press','Dumbbell Fly','Cable Fly','Push Up','Dips','Deadlift','Pull Up','Lat Pulldown','Seated Row','Bent Over Row','Face Pull','Squat','Leg Press','Romanian Deadlift','Leg Curl','Leg Extension','Hip Thrust','Glute Bridge','Bulgarian Split Squat','Walking Lunge','Calf Raise','Overhead Press','Lateral Raise','Front Raise','Arnold Press','Barbell Curl','Dumbbell Curl','Hammer Curl','Tricep Pushdown','Skull Crusher','Cable Crunch','Plank','Ab Wheel','Hanging Leg Raise','Russian Twist','Sled Push','Sled Pull','Farmers Carry','Sandbag Lunge','Wall Ball','Kettlebell Swing','Box Jump','Hip Thrust'];
+var ZONES=[
+  {z:'Zone 1',n:'Herstel',hr:'< 139',pace:'> 5:35',c:'#3498db'},
+  {z:'Zone 2',n:'Aerobic',hr:'140–147',pace:'4:56–5:35',c:'#2ecc71'},
+  {z:'Zone 3',n:'Tempo',hr:'148–155',pace:'4:35–4:56',c:'#f1c40f'},
+  {z:'Zone 4',n:'Threshold',hr:'156–164',pace:'4:20–4:35',c:'#e67e22'},
+  {z:'Zone 5a',n:'Drempel',hr:'165–168',pace:'4:12–4:20',c:'#e74c3c'},
+  {z:'Zone 5b',n:'VO2max',hr:'169–175',pace:'3:53–4:12',c:'#c0392b'},
+];
+var WEEK_PLAN=[
+  {d:'Maandag',s1:'Zone 2 fiets — 60 min',s2:'Upper body kracht + sauna'},
+  {d:'Dinsdag',s1:'Interval run — 6×1km @ 3:45–3:55/km, 3 min rust',s2:'Lower body kracht',hi:true},
+  {d:'Woensdag',s1:'Hyrox workout — 60 min gestructureerd',s2:'Zone 2 run 8–10km + sauna',hi:true},
+  {d:'Donderdag',s1:'Upper body kracht + zone 2 fiets',s2:'Tempo run 6–8km @ 4:20–4:35/km'},
+  {d:'Vrijdag',s1:'Zone 2 cardio — SkiErg of roeier',s2:'Full body kracht'},
+  {d:'Zaterdag',s1:'Long run — 12–16km zone 2',s2:'Mobiliteit + sauna'},
+  {d:'Zondag',s1:'Rust',s2:'Whoop HRV leidend'},
+];
+var exCounter=0;
+var garminData=null;
+
+// UTILS
+function p2s(p){if(!p||p.indexOf(':')<0)return 9999;var a=p.split(':');return parseInt(a[0])*60+parseInt(a[1]||0)}
+function s2p(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60}
+function today(){return new Date().toISOString().split('T')[0]}
+function wLeft(){return Math.max(0,Math.ceil((RACE-new Date())/604800000))}
+function wCur(){return Math.max(1,Math.ceil((new Date()-START)/604800000))}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},2200)}
+
+// NAV
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on')});
+  var el=document.getElementById('s-'+id);
+  if(el)el.classList.add('active');
+  document.querySelectorAll('.nb').forEach(function(b){
+    if(b.getAttribute('data-screen')===id)b.classList.add('on');
+  });
+  if(id==='dashboard')renderDash();
+  if(id==='progress')renderProgress();
+  if(id==='plan')renderPlan();
+}
+
+function goTab(tab){
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on')});
+  document.querySelectorAll('.tp').forEach(function(p){p.classList.remove('on')});
+  document.querySelectorAll('[data-tab="'+tab+'"]').forEach(function(b){b.classList.add('on')});
+  var el=document.getElementById('tp-'+tab);
+  if(el)el.classList.add('on');
+}
+
+// INIT
+function init(){
+  var d=today();
+  ['r-date','rn-date','hx-date','st-date','g-date'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.value=d;
+  });
+
+  // Station inputs
+  var si=document.getElementById('st-inputs');
+  if(si){
+    si.innerHTML='';
+    STATIONS.forEach(function(s){
+      si.innerHTML+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="flex:1.5;font-size:13px;color:var(--text2)">'+s+'</span><div style="flex:1"><input type="text" id="si-'+s.replace(/\s/g,'-')+'" placeholder="'+ST_TGT[s]+'"></div></div>';
+    });
+  }
+
+  // Exercise chips
+  var chips=document.getElementById('ex-chips');
+  if(chips){
+    var custom=S.all('custom-ex');
+    var all=EX_LIB.concat(custom.filter(function(c){return EX_LIB.indexOf(c)<0}));
+    chips.innerHTML=all.map(function(ex){
+      return'<button class="chip" data-ex="'+ex+'">'+ex+'</button>';
+    }).join('');
+    chips.querySelectorAll('.chip').forEach(function(c){
+      c.addEventListener('click',function(){addEx(c.getAttribute('data-ex'))});
+    });
+  }
+
+  // Event listeners
+  document.querySelectorAll('[data-screen]').forEach(function(b){
+    b.addEventListener('click',function(){goScreen(b.getAttribute('data-screen'))});
+  });
+  document.querySelectorAll('[data-tab]').forEach(function(b){
+    b.addEventListener('click',function(){goTab(b.getAttribute('data-tab'))});
+  });
+
+  document.getElementById('save-recovery').addEventListener('click',saveRecovery);
+  document.getElementById('save-run').addEventListener('click',saveRun);
+  document.getElementById('save-hyrox').addEventListener('click',saveHyrox);
+  document.getElementById('save-strength').addEventListener('click',saveStrength);
+  document.getElementById('save-garmin-manual').addEventListener('click',saveGarminManual);
+  document.getElementById('add-custom-ex').addEventListener('click',addCustomEx);
+  document.getElementById('upload-zone').addEventListener('click',function(){document.getElementById('garmin-file').click()});
+  document.getElementById('garmin-file').addEventListener('change',handleGarmin);
+  document.getElementById('garmin-save').addEventListener('click',saveGarmin);
+
+  renderDash();
+}
+
+// SAVE FUNCTIONS
+function saveRecovery(){
+  var rec={date:document.getElementById('r-date').value,recovery:+document.getElementById('r-rec').value||null,hrv:+document.getElementById('r-hrv').value||null,sleep:+document.getElementById('r-sleep').value||null,sleepScore:+document.getElementById('r-ss').value||null,strain:+document.getElementById('r-strain').value||null,note:document.getElementById('r-note').value,type:'recovery'};
+  if(!rec.date){toast('Vul een datum in');return}
+  S.push('recovery',rec);
+  toast('Herstel opgeslagen ✓');
+  renderDash();
+}
+
+function saveRun(){
+  var run={date:document.getElementById('rn-date').value,type:document.getElementById('rn-type').value,dist:+document.getElementById('rn-dist').value||null,time:document.getElementById('rn-time').value,pace:document.getElementById('rn-pace').value,hr:+document.getElementById('rn-hr').value||null,note:document.getElementById('rn-note').value,actType:'run'};
+  if(!run.date||!run.dist){toast('Vul datum en afstand in');return}
+  S.push('runs',run);
+  S.push('acts',{date:run.date,actType:'run',label:'Run '+run.dist+'km @ '+(run.pace||'?')+'/km',dist:run.dist});
+  toast('Run opgeslagen ✓');
+}
+
+function saveHyrox(){
+  var stations={};
+  STATIONS.forEach(function(s){var v=document.getElementById('si-'+s.replace(/\s/g,'-')).value;if(v)stations[s]=v});
+  var hx={date:document.getElementById('hx-date').value,type:document.getElementById('hx-type').value,stations:stations,total:document.getElementById('hx-total').value,note:document.getElementById('hx-note').value,actType:'hyrox'};
+  if(!hx.date){toast('Vul een datum in');return}
+  S.push('hyrox',hx);
+  S.push('acts',{date:hx.date,actType:'hyrox',label:'Hyrox '+hx.type+(hx.total?' — '+hx.total:'')});
+  toast('Hyrox opgeslagen ✓');
+}
+
+function saveStrength(){
+  var exercises=[];
+  document.querySelectorAll('[data-ex-idx]').forEach(function(card){
+    var idx=card.getAttribute('data-ex-idx');
+    var name=card.getAttribute('data-ex-name');
+    var sets=[];
+    card.querySelectorAll('[data-set-idx]').forEach(function(row){
+      var si=row.getAttribute('data-set-idx');
+      var reps=+document.getElementById('ex-reps-'+idx+'-'+si).value||0;
+      var kg=+document.getElementById('ex-kg-'+idx+'-'+si).value||0;
+      if(reps||kg)sets.push({set:+si+1,reps:reps,kg:kg});
+    });
+    if(sets.length)exercises.push({name:name,sets:sets});
+  });
+  var str={date:document.getElementById('st-date').value,type:document.getElementById('st-type').value,exercises:exercises,note:document.getElementById('st-note').value,actType:'strength'};
+  if(!str.date){toast('Vul een datum in');return}
+  if(!exercises.length){toast('Voeg minimaal één oefening toe');return}
+  S.push('strength',str);
+  S.push('acts',{date:str.date,actType:'strength',label:'Kracht — '+str.type+': '+exercises.map(function(e){return e.name}).join(', ').substring(0,40)});
+  document.getElementById('ex-list').innerHTML='';
+  exCounter=0;
+  toast('Training opgeslagen ✓');
+}
+
+function saveGarminManual(){
+  var act={date:document.getElementById('g-date').value,type:document.getElementById('g-type').value,dist:+document.getElementById('g-dist').value||null,time:document.getElementById('g-time').value,pace:document.getElementById('g-pace').value,hr:+document.getElementById('g-hr').value||null,cal:+document.getElementById('g-cal').value||null,actType:'run',source:'garmin'};
+  if(!act.date){toast('Vul een datum in');return}
+  S.push('runs',act);
+  S.push('acts',{date:act.date,actType:'run',label:'Garmin: '+act.type+' '+(act.dist||'')+'km',dist:act.dist});
+  toast('Garmin activiteit opgeslagen ✓');
+}
+
+// EXERCISE
+function addEx(name){
+  var list=document.getElementById('ex-list');
+  var idx=exCounter++;
+  var div=document.createElement('div');
+  div.className='card mt8';
+  div.setAttribute('data-ex-idx',idx);
+  div.setAttribute('data-ex-name',name);
+  div.style.background='#1a1a1a';
+  div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:14px;font-weight:500">'+name+'</span><button data-rm="'+idx+'" style="background:none;border:none;color:#555;cursor:pointer;font-size:20px;line-height:1;padding:0 4px">×</button></div><div data-sets="'+idx+'"></div><button data-addset="'+idx+'" style="width:100%;padding:8px;border-radius:8px;font-size:13px;cursor:pointer;border:1px dashed #333;background:none;color:#999;font-family:DM Sans,sans-serif;margin-top:8px">+ Set toevoegen</button>';
+  list.appendChild(div);
+  div.querySelector('[data-rm]').addEventListener('click',function(){div.remove()});
+  div.querySelector('[data-addset]').addEventListener('click',function(){addSet(idx)});
+  addSet(idx);
+}
+
+function addSet(exIdx){
+  var container=document.querySelector('[data-sets="'+exIdx+'"]');
+  if(!container)return;
+  var si=container.children.length;
+  var prevKg=si>0?(document.getElementById('ex-kg-'+exIdx+'-'+(si-1))||{value:''}).value:'';
+  var prevReps=si>0?(document.getElementById('ex-reps-'+exIdx+'-'+(si-1))||{value:''}).value:'';
+  var row=document.createElement('div');
+  row.setAttribute('data-set-idx',si);
+  row.style.cssText='display:grid;grid-template-columns:24px 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:6px';
+  row.innerHTML='<span style="font-size:12px;color:#555;text-align:center;font-weight:500">'+(si+1)+'</span><input type="number" id="ex-reps-'+exIdx+'-'+si+'" placeholder="Reps" value="'+prevReps+'" style="padding:8px 10px;font-size:14px"><input type="number" id="ex-kg-'+exIdx+'-'+si+'" placeholder="kg" value="'+prevKg+'" step="2.5" style="padding:8px 10px;font-size:14px"><button style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;padding:0 4px" onclick="this.parentElement.remove()">×</button>';
+  container.appendChild(row);
+}
+
+function addCustomEx(){
+  var input=document.getElementById('custom-ex');
+  var name=input.value.trim();
+  if(!name){toast('Vul een naam in');return}
+  S.push('custom-ex',name);
+  addEx(name);
+  input.value='';
+  // Add chip
+  var chips=document.getElementById('ex-chips');
+  var chip=document.createElement('button');
+  chip.className='chip';
+  chip.setAttribute('data-ex',name);
+  chip.textContent=name;
+  chip.addEventListener('click',function(){addEx(name)});
+  chips.appendChild(chip);
+  toast(name+' toegevoegd ✓');
+}
+
+// GARMIN
+function handleGarmin(e){
+  var file=e.target.files[0];
+  if(!file)return;
+  var ext=file.name.split('.').pop().toLowerCase();
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    if(ext==='csv')parseCSV(ev.target.result,file.name);
+    else if(ext==='gpx')parseGPX(ev.target.result,file.name);
+    else showGarminPreview({name:file.name,type:'FIT',note:'Gebruik CSV export voor automatisch inlezen.'},false);
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(content,fname){
+  var lines=content.trim().split('\n');
+  var headers=lines[0].split(',').map(function(h){return h.trim().replace(/"/g,'').toLowerCase()});
+  if(lines.length<2)return;
+  var row=lines[1].split(',').map(function(v){return v.trim().replace(/"/g,'')});
+  var obj={};headers.forEach(function(h,i){obj[h]=row[i]});
+  garminData={name:fname,date:obj['date']||today(),type:obj['activity type']||'Run',dist:parseFloat(obj['distance']||0),time:obj['time']||'',pace:obj['avg pace']||'',hr:parseInt(obj['avg hr']||0)};
+  showGarminPreview(garminData,true);
+}
+
+function parseGPX(content,fname){
+  var parser=new DOMParser();
+  var xml=parser.parseFromString(content,'text/xml');
+  var pts=xml.querySelectorAll('trkpt');
+  var name=xml.querySelector('name');
+  name=name?name.textContent:fname;
+  var lats=[],lons=[],times=[];
+  pts.forEach(function(p){lats.push(+p.getAttribute('lat'));lons.push(+p.getAttribute('lon'));var t=p.querySelector('time');if(t)times.push(new Date(t.textContent))});
+  var dist=0;
+  for(var i=1;i<lats.length;i++){var dl=lats[i]-lats[i-1],dn=lons[i]-lons[i-1];dist+=Math.sqrt(dl*dl+dn*dn)*111}
+  var dur=times.length>1?(times[times.length-1]-times[0])/1000:0;
+  garminData={name:name,date:times[0]?times[0].toISOString().split('T')[0]:today(),type:'GPX Run',dist:Math.round(dist*10)/10,time:s2p(Math.round(dur)),pace:dist>0?s2p(Math.round(dur/dist)):'',hr:0};
+  showGarminPreview(garminData,true);
+}
+
+function showGarminPreview(data,canSave){
+  var el=document.getElementById('garmin-preview');
+  el.classList.remove('hidden');
+  el.innerHTML='<div class="card2"><div class="lbl" style="padding:0;margin-bottom:8px">Gevonden activiteit</div>'
+    +'<div class="tr2"><span>Bestand</span><span style="font-size:12px;color:var(--text2)">'+data.name+'</span></div>'
+    +'<div class="tr2"><span>Type</span><span style="color:var(--accent)">'+data.type+'</span></div>'
+    +'<div class="tr2"><span>Datum</span><span>'+data.date+'</span></div>'
+    +'<div class="tr2"><span>Afstand</span><span>'+(data.dist||'—')+' km</span></div>'
+    +'<div class="tr2"><span>Pace</span><span>'+(data.pace||'—')+'</span></div>'
+    +(data.note?'<p style="font-size:12px;color:var(--text2);margin-top:8px">'+data.note+'</p>':'')
+    +'</div>';
+  var btn=document.getElementById('garmin-save');
+  if(canSave)btn.classList.remove('hidden');
+  else btn.classList.add('hidden');
+}
+
+function saveGarmin(){
+  if(!garminData)return;
+  S.push('runs',Object.assign({},garminData,{actType:'run',source:'garmin'}));
+  S.push('acts',{date:garminData.date,actType:'run',label:'Garmin: '+garminData.type+' '+garminData.dist+'km',dist:garminData.dist});
+  toast('Garmin activiteit geïmporteerd ✓');
+  garminData=null;
+  document.getElementById('garmin-preview').classList.add('hidden');
+  document.getElementById('garmin-save').classList.add('hidden');
+}
+
+// RENDER DASHBOARD
+function renderDash(){
+  document.getElementById('wleft').textContent=wLeft()+'W LEFT';
+  var wk=wCur();
+  var phase=wk<=5?'Fase 1 — Base':wk<=11?'Fase 2 — Race-specifiek':wk<=15?'Fase 3 — Piek':'Taper';
+  document.getElementById('phase-lbl').textContent=phase;
+  document.getElementById('phase-sub').textContent='Maastricht over '+wLeft()+' weken';
+  document.getElementById('wnum').textContent='W'+wk;
+
+  var recs=S.all('recovery').sort(function(a,b){return b.date>a.date?1:-1});
+  var tr=recs.find(function(r){return r.date===today()});
+  if(tr){
+    var p=tr.recovery||0;
+    var col=p>=70?'#2ecc71':p>=40?'#f39c12':'#e74c3c';
+    document.getElementById('rpct').textContent=p+'%';
+    document.getElementById('rstatus').textContent=p>=70?'Groen — Go':p>=40?'Oranje — Monitor':'Rood — Rust';
+    document.getElementById('rmsg').textContent=p>=70?'Goed hersteld. Kwaliteitsessie mogelijk.':p>=40?'Matig herstel. Pas intensiteit aan.':'Slecht herstel. Overweeg rust.';
+    var ring=document.getElementById('rring');
+    ring.style.stroke=col;
+    ring.style.strokeDashoffset=188-(188*p/100);
+    document.getElementById('d-hrv').innerHTML=(tr.hrv||'—')+'<span class="su">ms</span>';
+    document.getElementById('d-sleep').innerHTML=(tr.sleep||'—')+'<span class="su">u</span>';
+    document.getElementById('d-strain').textContent=tr.strain||'—';
+  }
+
+  // Weekly km
+  var ws=new Date();ws.setDate(ws.getDate()-ws.getDay()+1);
+  var wsStr=ws.toISOString().split('T')[0];
+  var runs=S.all('runs');
+  var wkm=runs.filter(function(r){return r.date>=wsStr}).reduce(function(a,r){return a+(r.dist||0)},0);
+  var tgt=Math.min(30+wk*1.5,55);
+  document.getElementById('wkm').innerHTML=Math.round(wkm*10)/10+'<span style="font-size:13px;color:var(--text2)"> / '+Math.round(tgt)+'km</span>';
+  document.getElementById('wkmbar').style.width=Math.min(100,wkm/tgt*100)+'%';
+
+  // Day bars
+  var db=document.getElementById('daybars');
+  db.innerHTML='';
+  var days=['Ma','Di','Wo','Do','Vr','Za','Zo'];
+  for(var i=6;i>=0;i--){
+    var dd=new Date();dd.setDate(dd.getDate()-i);
+    var ds=dd.toISOString().split('T')[0];
+    var km=runs.filter(function(r){return r.date===ds}).reduce(function(a,r){return a+(r.dist||0)},0);
+    var h=Math.max(2,km/15*58);
+    db.innerHTML+='<div class="bc"><div class="bar" style="height:'+h+'px;background:'+(km>0?'var(--accent)':'#222')+'"></div><div class="bl">'+days[(dd.getDay()+6)%7]+'</div></div>';
+  }
+
+  // Station progress
+  var sp=document.getElementById('stprog');
+  var hx=S.all('hyrox');
+  sp.innerHTML='';
+  STATIONS.forEach(function(s){
+    var best=hx.reduce(function(b,h){if(h.stations&&h.stations[s]){var sec=p2s(h.stations[s]);return sec<b?sec:b}return b},9999);
+    var cur=p2s(ST_CUR[s]),tgt2=p2s(ST_TGT[s]);
+    var bestStr=best<9999?s2p(best):ST_CUR[s];
+    var pct=best<9999?Math.min(100,Math.max(0,(cur-best)/(cur-tgt2)*100)):0;
+    sp.innerHTML+='<div style="margin-bottom:10px"><div class="row"><span style="font-size:13px">'+s+'</span><span style="font-size:12px;color:var(--text2)">'+bestStr+' → '+ST_TGT[s]+'</span></div><div class="pb"><div class="pf" style="width:'+pct+'%;background:'+(pct>=100?'#2ecc71':'var(--accent)')+'"></div></div></div>';
+  });
+
+  // Recent
+  var acts=S.all('acts').sort(function(a,b){return b.date>a.date?1:-1}).slice(0,5);
+  var re=document.getElementById('recent');
+  if(acts.length){
+    re.innerHTML=acts.map(function(a){
+      var ico=a.actType==='run'?'🏃':a.actType==='hyrox'?'🔥':a.actType==='strength'?'💪':'😴';
+      var bg=a.actType==='run'?'#1a2e1a':a.actType==='hyrox'?'#2e1a1a':a.actType==='strength'?'#1a1a2e':'#2e2a1a';
+      return'<div class="li"><div class="lic" style="background:'+bg+'">'+ico+'</div><div class="lim"><div class="lit">'+(a.label||a.actType)+'</div><div class="lmeta">'+(a.date||'')+'</div></div>'+(a.dist?'<div class="liv">'+a.dist+'<span style="font-size:11px;color:var(--text2)">km</span></div>':'')+'</div>';
+    }).join('');
+  } else {
+    re.innerHTML='<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:13px">Nog geen activiteiten gelogd</div>';
+  }
+}
+
+// RENDER PROGRESS
+function renderProgress(){
+  var recs=S.all('recovery').sort(function(a,b){return a.date>b.date?1:-1}).slice(-7);
+  renderBars('hrv-bars',recs,'hrv','var(--accent)');
+  var ha=recs.filter(function(r){return r.hrv}).reduce(function(a,r,_,arr){return a+r.hrv/arr.length},0);
+  document.getElementById('hrv-avg').textContent=ha?Math.round(ha)+' ms':'— ms';
+  renderBars('rec-bars',recs,'recovery','#2ecc71');
+  var ra=recs.filter(function(r){return r.recovery}).reduce(function(a,r,_,arr){return a+r.recovery/arr.length},0);
+  document.getElementById('rec-avg').textContent=ra?Math.round(ra)+'%':'— %';
+
+  // Volume
+  var vb=document.getElementById('vol-bars');vb.innerHTML='';
+  var runs=S.all('runs');
+  for(var w=7;w>=0;w--){
+    var ws2=new Date();ws2.setDate(ws2.getDate()-ws2.getDay()+1-w*7);
+    var we=new Date(ws2);we.setDate(we.getDate()+6);
+    var wsStr2=ws2.toISOString().split('T')[0],weStr=we.toISOString().split('T')[0];
+    var km=runs.filter(function(r){return r.date>=wsStr2&&r.date<=weStr}).reduce(function(a,r){return a+(r.dist||0)},0);
+    var h=Math.max(2,km/60*85);
+    vb.innerHTML+='<div class="bc"><div class="bar" style="height:'+h+'px;background:'+(km>0?'var(--accent)':'#222')+'"></div><div class="bl">'+(km>0?Math.round(km):'0')+'</div></div>';
+  }
+
+  // Pace
+  var intervals=runs.filter(function(r){return r.type==='interval'&&r.pace}).sort(function(a,b){return a.date>b.date?1:-1}).slice(-8);
+  var pb=document.getElementById('pace-bars');pb.innerHTML='';
+  if(intervals.length){
+    var paces=intervals.map(function(r){return p2s(r.pace)});
+    var minP=Math.min.apply(null,paces),maxP=Math.max.apply(null,paces);
+    intervals.forEach(function(r){
+      var sec=p2s(r.pace);
+      var h=Math.max(4,(1-(sec-minP)/(maxP-minP||1))*60+10);
+      pb.innerHTML+='<div class="bc"><div class="bar" style="height:'+h+'px;background:var(--accent)"></div><div class="bl">'+r.pace+'</div></div>';
+    });
+    document.getElementById('best-pace').textContent=s2p(Math.min.apply(null,paces))+'/km';
+  } else {
+    pb.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px 0">Log interval runs om progressie te zien</div>';
+  }
+
+  // Targets
+  var hxs=S.all('hyrox');
+  var tc=document.getElementById('target-comp');
+  tc.innerHTML='<div class="tr2" style="border-bottom:1px solid #2a2a2a"><span style="font-weight:500">Station</span><span style="font-weight:500;color:var(--text2)">Best</span><span style="font-weight:500">Doel</span></div>';
+  STATIONS.forEach(function(s){
+    var best=hxs.reduce(function(b,h){if(h.stations&&h.stations[s]){var sec=p2s(h.stations[s]);return sec<b?sec:b}return b},9999);
+    var at=best<=p2s(ST_TGT[s]);
+    tc.innerHTML+='<div class="tr2"><span style="font-size:13px">'+s+'</span><span style="font-size:13px;color:var(--accent)">'+(best<9999?s2p(best):ST_CUR[s])+'</span><span style="font-size:13px;color:'+(at?'#2ecc71':'var(--accent)')+'">'+ST_TGT[s]+(at?' ✓':'')+'</span></div>';
+  });
+}
+
+function renderBars(id,data,key,color){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.innerHTML='';
+  var vals=data.map(function(d){return d[key]||0});
+  var max=Math.max.apply(null,vals)||1;
+  if(vals.every(function(v){return v===0})){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:16px 0">Nog geen data</div>';return}
+  vals.forEach(function(v,i){
+    var h=Math.max(2,v/max*65);
+    var dd=new Date();dd.setDate(dd.getDate()-(data.length-1-i));
+    var lbl=dd.getDate()+'/'+(dd.getMonth()+1);
+    el.innerHTML+='<div class="bc"><div class="bar" style="height:'+h+'px;background:'+(v>0?color:'#222')+'"></div><div class="bl">'+lbl+'</div></div>';
+  });
+}
+
+// RENDER PLAN
+function renderPlan(){
+  var wk=wCur();
+  var phases=[
+    {n:'Fase 1 — Base',w:'1–5',d:'t/m 23 jun',c:'#2ecc71',desc:'Run volume naar 50km/week. Station isolatie. 6×1km intervals op 3:45–3:55/km met 3 min rust.',active:wk<=5},
+    {n:'Fase 2 — Race-specifiek',w:'6–11',d:'24 jun – 4 aug',c:'#f39c12',desc:'8×1km op race pace met 90s rust. Volledige simulatie elke 2–3 weken. Volume 50–55km.',active:wk>5&&wk<=11},
+    {n:'Fase 3 — Piek',w:'12–15',d:'5 aug – 1 sep',c:'#e74c3c',desc:'Hoogste intensiteit. Race pace op vermoeidheid. Wekelijkse benchmark.',active:wk>11&&wk<=15},
+    {n:'Taper',w:'16–17',d:'2–17 sep',c:'#3498db',desc:'Volume -40%. Intensiteit hoog. Fris aan de start.',active:wk>15},
+  ];
+  var pp=document.getElementById('plan-phases');
+  pp.innerHTML='';
+  phases.forEach(function(p){
+    pp.innerHTML+='<div class="wp" style="'+(p.active?'border-color:'+p.c+';border-width:1.5px':'')+'"><div class="wd"><span>'+p.n+'</span><span style="font-size:11px;color:var(--text2)">Wk '+p.w+'</span></div><div style="font-size:12px;color:var(--text2);margin-bottom:6px">'+p.d+'</div><div style="font-size:13px;color:var(--text2)">'+p.desc+'</div>'+(p.active?'<div style="margin-top:8px;font-size:11px;font-weight:600;color:'+p.c+'">← HUIDIGE FASE</div>':'')+'</div>';
+  });
+
+  // Week plan
+  var todayDay=new Date().getDay();
+  var wp=document.getElementById('week-plan');
+  wp.innerHTML='';
+  var dayIdx=[1,2,3,4,5,6,0];
+  WEEK_PLAN.forEach(function(d,i){
+    var isToday=dayIdx[i]===todayDay;
+    wp.innerHTML+='<div class="wp" style="'+(isToday?'border-color:var(--accent);border-width:1.5px':'')+'"><div class="wd"><span>'+d.d+'</span>'+(isToday?'<span class="badge" style="font-size:10px;padding:3px 8px">VANDAAG</span>':d.hi?'<span style="font-size:11px;color:var(--orange)">Prioriteit</span>':'')+'</div><div class="ws">Ochtend</div><div class="wt">'+d.s1+'</div><div class="ws">Avond/middag</div><div class="wt">'+d.s2+'</div></div>';
+  });
+
+  // Zones
+  var zz=document.getElementById('zones');
+  zz.innerHTML=ZONES.map(function(z){
+    return'<div class="tr2"><span style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:8px;height:8px;border-radius:50%;background:'+z.c+';flex-shrink:0"></span>'+z.z+' — '+z.n+'</span><span style="font-size:12px;color:var(--text2)">'+z.hr+'</span><span style="font-size:12px">'+z.pace+'</span></div>';
+  }).join('');
+}
+
+// START
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
